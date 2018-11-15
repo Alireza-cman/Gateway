@@ -1,0 +1,7 @@
+https://stackoverflow.com/questions/48872360/golang-mqtt-publish-and-subscribe
+https://medium.com/@matryer/very-basic-concurrency-for-beginners-in-go-663e63c6ba07
+https://docs.kuzzle.io/guide/code-examples/iot/go/
+
+// this portion will make a halt to not permite the code be terminated 
+
+//fmt.Println(strings.Split(msg.Topic(), "/"))

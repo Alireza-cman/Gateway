@@ -1,0 +1,41 @@
+func setup() (*bolt.DB, error) {
+	db, err := bolt.Open("bolt.db", 0644, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return db, err
+	// end of bolt db connection
+}
+
+
+//define a function for the default message handler
+// var f MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
+// 	fmt.Printf("TOPIC: %s\n", msg.Topic())
+// 	fmt.Printf("MSG: %s\n", msg.Payload())
+// 	//payload := []byte(`{"index": "myindex", "collection": "mycollection", "controller": "realtime", "action": "publish", "requestId": "unique_request_id", "body": {"volatile": "message"}}`)
+// 	fmt.Println(strings.Split(msg.Topic(), "/"))
+// }
+
+
+
+	//value := gjson.Get(string(json_output), "value")
+	//fmt.Println(reflect.TypeOf(value))
+	//fmt.Println(serialNumber)
+	//fmt.Println(telemetryKey)
+
+	// if value.Type == 2 {
+
+	// }
+
+	// fmt.Println(result)
+
+	// value := output["value"]
+
+	// if value == nil {
+	// 	log.Println("value is not found in the message ")
+	// 	return
+	// 	//value, _ = sjson.Set(string(msg.Payload()[:]), "serialNumber", RetrivedTopic[2])
+	// }
+	// serialNumber = fmt.Sprintf("%v", serialNumber)
+	// payload := fmt.Sprintf("%v", msg.Payload())
+	// result, _ := sjson.Set(payload, "device", serialNumber)
