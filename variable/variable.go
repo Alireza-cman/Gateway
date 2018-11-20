@@ -15,4 +15,8 @@ const (
 	D2G_Connect_embed    = "v1/sensors/+/connect" // -t "v1/sensors/SN-001/connect" -m ''
 	D2G_Disconnect       = "v1/sensors/disconnect"
 	D2G_Disconnect_embed = "v1/sensors/+/disconnect"
+	D2G_RPC              = "v1/sensors/+/request/+/+" // v1/sensors/deviceName/request/method/requestID
+	//
+	PlatformBroker = "tcp://localhost:1883"
+	GatewayBroker  = "tcp://localhost:1883"
 )

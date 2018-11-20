@@ -7,6 +7,7 @@ import (
 	"github.com/Atrovan/Gateway/variable"
 
 	"github.com/Atrovan/Gateway/client2gateway"
+	"github.com/Atrovan/Gateway/platform2gateway"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 
@@ -49,6 +50,9 @@ func main() {
 		panic(token.Error())
 	}
 	// this portion make the connection and subscrtption alive
+	if token := client.Subscribe(variable.G2P_RPC, 0, platform2gateway.G2P_RPC); token.Wait() && token.Error() != nil {
+		panic(token.Error())
+	}
 
 	var wg sync.WaitGroup
 
