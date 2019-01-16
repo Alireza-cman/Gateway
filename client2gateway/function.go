@@ -3,7 +3,7 @@ package client2gateway
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"os"
 	"time"
 
 	"strings"
@@ -11,28 +11,54 @@ import (
 	"github.com/Atrovan/Gateway/flatten"
 	"github.com/Atrovan/Gateway/variable"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
+	logging "github.com/op/go-logging"
 	"github.com/tidwall/sjson"
+)
+
+var log = logging.MustGetLogger("example")
+var format = logging.MustStringFormatter(
+	`%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:03x}%{color:reset} %{message}`,
 )
 
 //Global variable
 //TODO: I should by some how change this part of code
 var PublishClient MQTT.Client
 
+//var taskQueue rmq.Queue
+
 func init() {
-	log.Println("trying to connect to the platform ")
+	//logger format, dont touch it
+	backend1 := logging.NewLogBackend(os.Stderr, "", 0)
+	backend2 := logging.NewLogBackend(os.Stderr, "", 0)
+	backend2Formatter := logging.NewBackendFormatter(backend2, format)
+	backend1Leveled := logging.AddModuleLevel(backend1)
+	backend1Leveled.SetLevel(logging.ERROR, "")
+	logging.SetBackend(backend1Leveled, backend2Formatter)
+	//
+	log.Warning("trying to connect to the platform ")
 	opts := MQTT.NewClientOptions().AddBroker(variable.PlatformBroker)
+	opts.Username = "tptuViJ6lrDwoMbnKcfQ"
+	opts.ClientID = "AtrovanGatewayThings"
+	opts.KeepAlive = 60
 	PublishClient = MQTT.NewClient(opts)
 	//log.Println("asdasd")
 
 	if token := (PublishClient).Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
-	log.Println("[DONE] The gatewat is connected to the platform")
+	log.Info("[DONE] The gatewat is connected to the platform")
+	go GatewayDescriptor(PublishClient)
+	//connecting gateway to the redis queue
+	// log.Println("[Zooring...] trying to make a connection between redis queue and the gateway")
+	// connection := rmq.OpenConnection("my service", "tcp", "localhost:6379", 1)
+	// taskQueue = connection.OpenQueue("tasks")
+	// log.Println("[Done] Gateway is connected to the redis queue")
 
 }
 
 func Message2Platfrom(client MQTT.Client, value string, topic string, ShouldFlat bool) {
 
+	// taskQueue.StartConsuming(10, time.Second)
 	result := value
 	var err error
 	if ShouldFlat == true {
@@ -40,10 +66,11 @@ func Message2Platfrom(client MQTT.Client, value string, topic string, ShouldFlat
 	}
 	//result, err := flatten.FlattenString(payloadMessage, "", flatten.DotStyle)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 		return
 	}
-	fmt.Println("output is: ", result)
+	log.Critical("output is: ", result)
+	log.Critical(topic)
 	if token := client.Publish(topic, 0, false, result); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
@@ -55,16 +82,18 @@ func Message2Platfrom(client MQTT.Client, value string, topic string, ShouldFlat
 var D2G_connect = func(client MQTT.Client, msg MQTT.Message) {
 	fmt.Printf("TOPIC: %s\n", msg.Topic())
 	fmt.Printf("MSG: %s\n", msg.Payload())
+	// delivery := "task payload"
+	// taskQueue.Publish(delivery)
 	var input interface{}
 	err := json.Unmarshal(msg.Payload(), &input)
 	if err != nil {
-		log.Println(err)
-		log.Println("something went wrong")
+		log.Error(err)
+
 	}
 	output := input.(map[string]interface{})
 	serialNumber := output["serialNumber"]
 	if serialNumber == nil {
-		log.Println("serialNumber is not found in the message ")
+		log.Error("serialNumber is not found in the message ")
 		return
 	}
 	serialNumber = fmt.Sprintf("%v", serialNumber)
@@ -82,7 +111,7 @@ var D2G_connect_v2 = func(client MQTT.Client, msg MQTT.Message) {
 
 	err := json.Unmarshal(msg.Payload(), &input)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 	}
 
 	RetrivedTopic := strings.Split(msg.Topic(), "/")
@@ -94,7 +123,7 @@ var D2G_connect_v2 = func(client MQTT.Client, msg MQTT.Message) {
 	//println(value)
 
 	if serialNumber == nil {
-		log.Println("serialNumber is not found in the message ")
+		log.Error("serialNumber is not found in the message ")
 		//value, _ = sjson.Set(string(msg.Payload()[:]), "serialNumber", RetrivedTopic[2])
 	}
 	//fmt.Println(value)
@@ -109,7 +138,7 @@ var D2G_disconnect = func(client MQTT.Client, msg MQTT.Message) {
 	var input interface{}
 	err := json.Unmarshal(msg.Payload(), &input)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 	}
 
 	//RetrivedTopic := strings.Split(msg.Topic(), "/")
@@ -117,7 +146,7 @@ var D2G_disconnect = func(client MQTT.Client, msg MQTT.Message) {
 	serialNumber := output["serialNumber"]
 
 	if serialNumber == nil {
-		log.Println("serialNumber is not found in the message ")
+		log.Error("serialNumber is not found in the message ")
 		return
 		//value, _ = sjson.Set(string(msg.Payload()[:]), "serialNumber", RetrivedTopic[2])
 	}
@@ -135,7 +164,7 @@ var D2G_disconnect_v2 = func(client MQTT.Client, msg MQTT.Message) {
 
 	err := json.Unmarshal(msg.Payload(), &input)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 	}
 
 	RetrivedTopic := strings.Split(msg.Topic(), "/")
@@ -153,7 +182,7 @@ var D2G_sensors = func(client MQTT.Client, msg MQTT.Message) {
 	err := json.Unmarshal(msg.Payload(), &input)
 	if err != nil {
 
-		log.Println(err)
+		log.Error(err)
 		return
 	}
 	//telemetry := fmt.Sprintf("%v", string(msg.Payload()))
@@ -161,7 +190,7 @@ var D2G_sensors = func(client MQTT.Client, msg MQTT.Message) {
 	output := input.(map[string]interface{})
 	tmp := output["serialNumber"]
 	if tmp == nil {
-		log.Println(" serial number does not exist")
+		log.Error(" serial number does not exist")
 		return
 	}
 	//serialNumber := fmt.Sprintf("%v", tmp)
@@ -176,10 +205,10 @@ var D2G_sensors = func(client MQTT.Client, msg MQTT.Message) {
 		if k == "serialNumber" {
 			continue
 		}
-		total, _ = sjson.Set(total, serialNumber+".0.value."+k, v)
+		total, _ = sjson.Set(total, serialNumber+".0.values."+k, v)
 	}
 	fmt.Println(total)
-	go Message2Platfrom(PublishClient, total, variable.G2P_Disconnect, false)
+	go Message2Platfrom(PublishClient, total, variable.G2P_Telemetry, false)
 }
 
 var D2G_sensors_v2 = func(client MQTT.Client, msg MQTT.Message) {
@@ -189,7 +218,7 @@ var D2G_sensors_v2 = func(client MQTT.Client, msg MQTT.Message) {
 	var input interface{}
 	err := json.Unmarshal(msg.Payload(), &input)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 		return
 	}
 
@@ -204,7 +233,7 @@ var D2G_sensors_v2 = func(client MQTT.Client, msg MQTT.Message) {
 	//json_output, err := json.Marshal(output)
 	value := output["value"]
 	total, _ := sjson.Set("", serialNumber+".0.ts", time.Now().UTC().Unix())
-	result, _ := sjson.Set(total, serialNumber+".0.value."+telemetryKey, value)
+	result, _ := sjson.Set(total, serialNumber+".0.values."+telemetryKey, value)
 	fmt.Println(total)
 
 	go Message2Platfrom(PublishClient, result, variable.G2P_Telemetry, false)
@@ -217,7 +246,7 @@ var D2G_RPC = func(client MQTT.Client, msg MQTT.Message) {
 	var input interface{}
 	err := json.Unmarshal(msg.Payload(), &input)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 		return
 	}
 
@@ -237,4 +266,18 @@ var D2G_RPC = func(client MQTT.Client, msg MQTT.Message) {
 	fmt.Println(total)
 
 	go Message2Platfrom(PublishClient, result, variable.G2P_Telemetry, false)
+}
+
+func GatewayDescriptor(client MQTT.Client) {
+	aaaaa := `{"alireza":123123}`
+	for {
+		if token := client.Publish(variable.G2P_Dec, 0, false, aaaaa); token.Wait() && token.Error() != nil {
+
+			log.Error(token.Error())
+		} else {
+			log.Notice("Gatway Descriptor was sent successfully to the Platform")
+		}
+
+		time.Sleep(time.Duration(60) * time.Second)
+	}
 }

@@ -3,27 +3,30 @@ package platform2gateway
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/Atrovan/Gateway/flatten"
 	"github.com/Atrovan/Gateway/variable"
+	logging "github.com/op/go-logging"
 	"github.com/tidwall/gjson"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 
 var PublishClient MQTT.Client
+var log = logging.MustGetLogger("example")
+var format = logging.MustStringFormatter(
+	`%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:03x}%{color:reset} %{message}`,
+)
 
 func init() {
-	log.Println("trying to connect to the gateway broker ")
+	log.Warning("trying to connect to the gateway broker ")
 	opts := MQTT.NewClientOptions().AddBroker(variable.GatewayBroker)
 	PublishClient = MQTT.NewClient(opts)
 
 	if token := (PublishClient).Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
-	log.Println("[DONE] The client is connected to the local broker")
-
+	log.Warning("[DONE] The client is connected to the local broker")
 }
 
 func Message2Platfrom(client MQTT.Client, value string, topic string, ShouldFlat bool) {
@@ -36,7 +39,7 @@ func Message2Platfrom(client MQTT.Client, value string, topic string, ShouldFlat
 	}
 	//result, err := flatten.FlattenString(payloadMessage, "", flatten.DotStyle)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 		return
 	}
 	fmt.Println("output is: ", result)
@@ -55,7 +58,7 @@ var G2P_RPC = func(client MQTT.Client, msg MQTT.Message) {
 	err := json.Unmarshal(msg.Payload(), &input)
 	if err != nil {
 
-		log.Println(err)
+		log.Error(err)
 		return
 	}
 	//telemetry := fmt.Sprintf("%v", string(msg.Payload()))
@@ -63,7 +66,7 @@ var G2P_RPC = func(client MQTT.Client, msg MQTT.Message) {
 	output := input.(map[string]interface{})
 	tmp := output["device"]
 	if tmp == nil {
-		log.Println(" serial number does not exist")
+		log.Error(" serial number does not exist")
 		return
 	}
 	jsonInput, _ := json.Marshal(output)
