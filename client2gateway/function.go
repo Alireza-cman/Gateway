@@ -198,7 +198,7 @@ var D2G_sensors = func(client MQTT.Client, msg MQTT.Message) {
 	//fmt.Println(serialNumber)
 
 	serialNumber = ":" + serialNumber
-	total, _ := sjson.Set("", serialNumber+".0.ts", time.Now().UTC().Unix())
+	total, _ := sjson.Set("", serialNumber+".0.ts", time.Now().UTC().Unix()*1000)
 
 	fmt.Println(total)
 	for k, v := range output {

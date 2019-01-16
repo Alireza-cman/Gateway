@@ -67,7 +67,7 @@ func Things2Gateway() {
 
 //ThingsManipulator is a kind of load balancer of topics
 func ThingsManipulator(client MQTT.Client) {
-
+	log.Notice("Thingsmanipulator is started")
 	if token := client.Subscribe(variable.D2G_Connect, 0, client2gateway.D2G_connect); token.Wait() && token.Error() != nil {
 		log.Error(token.Error())
 	}
