@@ -1,8 +1,8 @@
 package platform2gateway
 
 import (
-	"encoding/json"
 	"fmt"
+	"io/ioutil"
 
 	"github.com/Atrovan/Gateway/flatten"
 	"github.com/Atrovan/Gateway/variable"
@@ -19,12 +19,21 @@ var format = logging.MustStringFormatter(
 )
 
 func init() {
+	// reading config file
+	configFile := variable.ConfigFile
+	plan, err := ioutil.ReadFile(configFile)
+	configFile = string(plan)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	GatewayBroker := gjson.Get(configFile, "GatewayAddress").Str
 	log.Warning("trying to connect to the gateway broker ")
-	opts := MQTT.NewClientOptions().AddBroker(variable.GatewayBroker)
+	opts := MQTT.NewClientOptions().AddBroker(GatewayBroker)
 	PublishClient = MQTT.NewClient(opts)
 
 	if token := (PublishClient).Connect(); token.Wait() && token.Error() != nil {
-		panic(token.Error())
+		log.Panic(token.Error())
 	}
 	log.Warning("[DONE] The client is connected to the local broker")
 }
@@ -48,37 +57,4 @@ func Message2Platfrom(client MQTT.Client, value string, topic string, ShouldFlat
 		panic(token.Error())
 	}
 
-}
-
-var G2P_RPC = func(client MQTT.Client, msg MQTT.Message) {
-	//fmt.Printf("TOPIC: %s\n", msg.Topic())
-	//fmt.Printf("MSG: %s\n", msg.Payload())
-
-	var input interface{}
-	err := json.Unmarshal(msg.Payload(), &input)
-	if err != nil {
-
-		log.Error(err)
-		return
-	}
-	//telemetry := fmt.Sprintf("%v", string(msg.Payload()))
-
-	output := input.(map[string]interface{})
-	tmp := output["device"]
-	if tmp == nil {
-		log.Error(" serial number does not exist")
-		return
-	}
-	jsonInput, _ := json.Marshal(output)
-	totalRPC := string(jsonInput)
-	//fmt.Println(totalRPC)
-	serialNumber := gjson.Get(totalRPC, "device")
-	method := gjson.Get(totalRPC, "data.method")
-	params := gjson.Get(totalRPC, "data.params")
-
-	//	fmt.Println(params)
-	topic := "v1/sensors/" + serialNumber.Str + "/request/" + method.Str + "/1"
-	//fmt.Println(topic)
-
-	go Message2Platfrom(PublishClient, params.Raw, topic, false)
 }

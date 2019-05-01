@@ -1,7 +1,7 @@
 package variable
 
 const (
-
+	ConfigFile = "config.json"
 	//gateway to Platform topics
 	G2P_Connect    = "v1/gateway/connect" // -m {"serialNumber":}
 	G2P_Disconnect = "v1/gateway/disconnect"
@@ -17,6 +17,6 @@ const (
 	D2G_Disconnect_embed = "v1/sensors/+/disconnect"
 	D2G_RPC              = "v1/sensors/+/request/+/+" // v1/sensors/deviceName/request/method/requestID
 	//
-	PlatformBroker = "tcp://brokera.atro1.com:1883"
+	PlatformBroker = "tcp://broker.atro1.com:1883"
 	GatewayBroker  = "tcp://localhost:1883"
 )

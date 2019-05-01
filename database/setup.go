@@ -3,29 +3,42 @@ package database
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	bolt "github.com/boltdb/bolt"
 )
 
 var DB *bolt.DB
 
-func init() {
-	var err error
-	DB, err = bolt.Open("bolt.db", 0644, nil)
-	if err != nil {
-		log.Println(err)
-		panic(err)
-	}
+// func init() {
+// 	var err error
+// 	DB, err = bolt.Open("bolt.db", 0644, nil)
+// 	if err != nil {
+// 		log.Println(err)
+// 		panic(err)
+// 	}
 
-}
-func setup() (*bolt.DB, error) {
-	db, err := bolt.Open("bolt.db", 0644, nil)
+// }
+func SetupDB() (*bolt.DB, error) {
+	db, err := bolt.Open("test.db", 0644, nil)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("could not open db, %v", err)
 	}
-	return db, err
-	// end of bolt db connection
+	err = db.Update(func(tx *bolt.Tx) error {
+		root, err := tx.CreateBucketIfNotExists([]byte("DB"))
+		if err != nil {
+			return fmt.Errorf("could not create root bucket: %v", err)
+		}
+		_, err = root.CreateBucketIfNotExists([]byte("DEVICE"))
+		if err != nil {
+			return fmt.Errorf("could not create device bucket: %v", err)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not set up buckets, %v", err)
+	}
+	fmt.Println("DB Setup Done")
+	return db, nil
 }
 
 func StoreData(BucketName string, key []byte, value []byte) error {

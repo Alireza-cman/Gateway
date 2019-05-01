@@ -1,15 +1,20 @@
 package main
 
 import (
+	"fmt"
+	"io/ioutil"
 	"os"
 	"sync"
 
 	"github.com/Atrovan/Gateway/client2gateway"
-	"github.com/Atrovan/Gateway/platform2gateway"
 	"github.com/Atrovan/Gateway/variable"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	logging "github.com/op/go-logging"
+	"github.com/spf13/viper"
+	"github.com/tidwall/gjson"
 )
+
+var Mut sync.Mutex
 
 func GW_Publish(payload []byte, client MQTT.Client) {
 
@@ -34,8 +39,14 @@ func main() {
 	backend1Leveled.SetLevel(logging.ERROR, "")
 	logging.SetBackend(backend1Leveled, backend2Formatter)
 	//
+	viper.SetConfigName("config")
+	viper.AddConfigPath(".")
+	err := viper.ReadInConfig()
+	if err != nil { // Handle errors reading the config file
+		panic(fmt.Errorf("Fatal error config file: %s \n", err))
+	}
+	//config.GetLocalClient()
 	//go Gateway2Platform()
-
 	go Things2Gateway()
 	//
 
@@ -47,8 +58,19 @@ func main() {
 }
 
 func Things2Gateway() {
+	// reading config file
+	Mut.Lock()
+	configFile := variable.ConfigFile
+	plan, err := ioutil.ReadFile(configFile)
+	configFile = string(plan)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	Mut.Unlock()
+	GatewayBroker := gjson.Get(configFile, "GatewayAddress").Str
 	// MQTT client which is dealing with the platform
-	opts := MQTT.NewClientOptions().AddBroker(variable.GatewayBroker)
+	opts := MQTT.NewClientOptions().AddBroker(GatewayBroker)
 	client := MQTT.NewClient(opts)
 
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
@@ -90,7 +112,7 @@ func ThingsManipulator(client MQTT.Client) {
 	if token := client.Subscribe(variable.D2G_Sensor_embed, 0, client2gateway.D2G_sensors_v2); token.Wait() && token.Error() != nil {
 		log.Error(token.Error())
 	}
-	// this portion make the connection and subscrtption alive
+	//this portion make the connection and subscrtption alive
 	if token := client.Subscribe(variable.G2P_RPC, 0, platform2gateway.G2P_RPC); token.Wait() && token.Error() != nil {
 		log.Error(token.Error())
 	}

@@ -1,0 +1,13 @@
+{
+    "PlatformAddress": "tcp://brokera.atro1.com:1883",
+    "GatewayAddress": "tcp://localhost:1883",
+    "AccessToken":"tptuViJ6lrDwoMbnKcfQ",
+    "lora":{
+        "gateway": "123123",
+        "application" : "alireza",
+        "software": {
+            "name":"smartparking",
+            "usecase": "monitoring"
+        }
+    }
+}
